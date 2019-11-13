@@ -2,10 +2,11 @@ import requests
 import clearbit
 import pandas as pd
 import sys
+import os
 
-clearbit.key = "sk_39ce0c6f996344302a5581fd6aaa0aea"
-client_id = "b9b07d3bf1eb20df5c96"
-client_secret = "7843897ae296a2259b934bc0062b446102eaee92"
+clearbit.key = os.environ.get("CLEARBIT_KEY")
+client_id = os.environ.get("CLIENT_ID")
+client_secret = os.environ.get("CLIENT_SECRET")
 github_org = "https://api.github.com/orgs/stripe-ctf/repos?client_id={}&client_secret={}".format(client_id, client_secret)
 
 def get_contributors():
