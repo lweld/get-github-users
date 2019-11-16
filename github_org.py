@@ -12,6 +12,7 @@ github_org = "https://api.github.com/orgs/stripe-ctf/repos?client_id={}&client_s
 def get_contributors():
 	r = requests.get(url = github_org)
 	repos_list = r.json()
+	print(repos_list)
 	contributors_list = []
 	for repo in repos_list:
 		repo_contributors = []
