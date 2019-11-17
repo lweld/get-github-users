@@ -4,16 +4,19 @@ import pandas as pd
 import sys
 import os
 from dotenv import load_dotenv
+import csv
+from flask import Flask, request, make_response
+
+app = Flask(__name__)
 
 load_dotenv()
 
 clearbit.key = os.getenv("CLEARBIT_KEY")
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
-github_org = "https://api.github.com/orgs/stripe-ctf/repos?client_id={}&client_secret={}".format(client_id, client_secret)
 
-def get_contributors():
-	r = requests.get(url = github_org)
+def get_contributors(github_url):
+	r = requests.get(url = github_url)
 	repos_list = r.json()
 	contributors_list = []
 	for repo in repos_list:
@@ -58,9 +61,9 @@ def enrich_emails(emails):
 	for e in emails:
 		try:
 			person = clearbit.Person.find(email=e, stream=True)
-		except:
+		except Exception as error:
 			person = None
-			print("Looks like a {} occurred.".format(sys.exc_info()[0]))
+			print("Looks like a {} occurred.".format(error))
 		if person != None:
 			g_handle = person["github"]["handle"]
 			l_handle = person["linkedin"]["handle"]
@@ -69,14 +72,26 @@ def enrich_emails(emails):
 			users.append({"name":person['name']['fullName'], "email":person["email"], "location":person["location"], "github":github, "linkedin":linkedin, "personal website":person["site"]})
 	return users
 
-def write_to_excel(users):
-	df = pd.DataFrame(users)
-	df.to_csv("github_profiles.csv")
+@app.route('/', methods=['GET', 'POST'])
+def form_example():
+	if request.method == 'POST':
+		org = request.form.get('github_org')
+		github_url = "https://api.github.com/orgs/{}/repos?client_id={}&client_secret={}".format(org, client_id, client_secret)
+		contributors_list = get_contributors(github_url)
+		github_handles = get_github_handles(contributors_list)
+		emails = get_emails(github_handles)
+		users = enrich_emails(emails)
+		df = pd.DataFrame(users)
+		resp = make_response(df.to_csv())
+		resp.headers["Content-Disposition"] = "attachment; filename=github_profiles.csv"
+		resp.headers["Content-Type"] = "text/csv"
+		return resp
+		
+	return '''<form method="POST">
+              GitHub Org: <input type="text" name="github_org" placeholder="stripe-ctf">
+              <input type="submit" value="Submit"><br>
+          </form>
+          <p>It may over 1 minute for the csv to be generated.<p>'''
 
-def main():
-	contributors_list = get_contributors()
-	github_handles = get_github_handles(contributors_list)
-	emails = get_emails(github_handles)
-	users = enrich_emails(emails)
-	write_to_excel(users)
-main()
+if __name__ == "__main__":
+    app.run(debug=True)
