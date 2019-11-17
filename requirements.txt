@@ -1,3 +1,4 @@
 clearbit==0.1.7
 pandas==0.23.4
 requests==2.20.0
+python-dotenv

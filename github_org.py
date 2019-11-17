@@ -3,16 +3,18 @@ import clearbit
 import pandas as pd
 import sys
 import os
+from dotenv import load_dotenv
 
-clearbit.key = os.environ.get("CLEARBIT_KEY")
-client_id = os.environ.get("CLIENT_ID")
-client_secret = os.environ.get("CLIENT_SECRET")
+load_dotenv()
+
+clearbit.key = os.getenv("CLEARBIT_KEY")
+client_id = os.getenv("CLIENT_ID")
+client_secret = os.getenv("CLIENT_SECRET")
 github_org = "https://api.github.com/orgs/stripe-ctf/repos?client_id={}&client_secret={}".format(client_id, client_secret)
 
 def get_contributors():
 	r = requests.get(url = github_org)
 	repos_list = r.json()
-	print(repos_list)
 	contributors_list = []
 	for repo in repos_list:
 		repo_contributors = []
