@@ -15,9 +15,7 @@ clearbit.key = os.getenv("CLEARBIT_KEY")
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
 
-def get_contributors(github_url):
-	r = requests.get(url = github_url)
-	repos_list = r.json()
+def get_contributors(repos_list):
 	contributors_list = []
 	for repo in repos_list:
 		repo_contributors = []
@@ -50,7 +48,6 @@ def get_emails(github_handles):
 				if index > len(user_activity_data.json()) - 1:
 					break
 				elif "commits" in user_activity_data.json()[index]["payload"]:
-					print(user_activity_data.json(), "\n")
 					try:
 						email = user_activity_data.json()[index]["payload"]["commits"][0]["author"]["email"]
 						emails.append(email)
@@ -68,7 +65,7 @@ def enrich_emails(emails):
 			person = clearbit.Person.find(email=e, stream=True)
 		except Exception as error:
 			person = None
-			print("Looks like a {} occurred.".format(error))
+			print(error)
 		if person != None:
 			g_handle = person["github"]["handle"]
 			l_handle = person["linkedin"]["handle"]
@@ -82,7 +79,15 @@ def form_example():
 	if request.method == 'POST':
 		org = request.form.get('github_org')
 		github_url = "https://api.github.com/orgs/{}/repos?client_id={}&client_secret={}".format(org, client_id, client_secret)
-		contributors_list = get_contributors(github_url)
+		r = requests.get(url = github_url).json()
+		if "message" in r:
+			return '''<form method="POST">
+              		  GitHub Org: <input type="text" name="github_org" placeholder="stripe-ctf">
+              		  <input type="submit" value="Submit"><br>
+          		  </form>
+          		  <p>It'll take a few mins for the csv to be generated.<p>
+				  <h2>"{}" is not a valid organization on GitHub.<h2>'''.format(org)
+		contributors_list = get_contributors(r)
 		github_handles = get_github_handles(contributors_list)
 		emails = get_emails(github_handles)
 		users = enrich_emails(emails)
@@ -96,7 +101,7 @@ def form_example():
               GitHub Org: <input type="text" name="github_org" placeholder="stripe-ctf">
               <input type="submit" value="Submit"><br>
           </form>
-          <p>It may over 1 minute for the csv to be generated.<p>'''
+          <p>It'll take a few mins for the csv to be generated.<p>'''
 
 if __name__ == "__main__":
     app.run(debug=True)
