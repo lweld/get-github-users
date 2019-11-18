@@ -30,10 +30,11 @@ def get_contributors(github_url):
 def get_github_handles(contributors_list):
 	github_handles = []
 	for repo in contributors_list:
-		contributors = requests.get(url = repo[0])
-		forks = requests.get(url = repo[1])
-		stars = requests.get(url = repo[2])
-		for user in contributors.json(): github_handles.append(user["login"])
+		contributors = requests.get(url = "{}?client_id={}&client_secret={}".format(repo[0], client_id, client_secret))
+		forks = requests.get(url = "{}?client_id={}&client_secret={}".format(repo[1], client_id, client_secret))
+		stars = requests.get(url = "{}?client_id={}&client_secret={}".format(repo[2], client_id, client_secret))
+		for user in contributors.json(): 
+			github_handles.append(user["login"])
 		for user in forks.json(): github_handles.append(user["owner"]["login"])
 		for user in stars.json(): github_handles.append(user["login"])
 	github_handles = list(set(github_handles))
@@ -49,9 +50,13 @@ def get_emails(github_handles):
 				if index > len(user_activity_data.json()) - 1:
 					break
 				elif "commits" in user_activity_data.json()[index]["payload"]:
-					email = user_activity_data.json()[index]["payload"]["commits"][0]["author"]["email"]
-					emails.append(email)
-					break
+					print(user_activity_data.json(), "\n")
+					try:
+						email = user_activity_data.json()[index]["payload"]["commits"][0]["author"]["email"]
+						emails.append(email)
+						break
+					except:
+						continue
 				else:
 					continue
 	return emails
